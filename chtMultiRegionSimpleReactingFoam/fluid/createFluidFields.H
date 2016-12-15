@@ -10,7 +10,7 @@ PtrList<surfaceScalarField> ghfFluid(fluidRegions.size());
 PtrList<compressible::turbulenceModel> turbulence(fluidRegions.size());
 PtrList<volScalarField> p_rghFluid(fluidRegions.size());
 PtrList<radiation::radiationModel> radiation(fluidRegions.size());
-PtrList<volScalarField> dQFluid(fluidRegions.size());
+PtrList<volScalarField> QdotFluid(fluidRegions.size());
 
 List<scalar> initialMassFluid(fluidRegions.size());
 List<label> pRefCellFluid(fluidRegions.size(), 0);
@@ -201,25 +201,25 @@ forAll(fluidRegions, i)
         radiation::radiationModel::New(reactionFluid[i].thermo().T())
     );
 
-   Info<< "    Adding to dQ\n" << endl;
-   dQFluid.set
+   Info<< "    Adding to Qdot\n" << endl;
+   QdotFluid.set
    (
         i,
         new volScalarField
         (
             IOobject
             (
-                "dQ",
+                "Qdot",
                 runTime.timeName(),
                 fluidRegions[i],
-                IOobject::NO_READ,
+                IOobject::READ_IF_PRESENT,
                 IOobject::AUTO_WRITE
             ),
                 fluidRegions[i],
                 dimensionedScalar
             (
-                "dQ",
-                dimEnergy/dimTime,
+                "Qdot",
+                dimEnergy/dimVolume/dimTime,
                 0
             )
         )
