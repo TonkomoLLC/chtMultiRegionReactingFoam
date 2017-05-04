@@ -16,6 +16,9 @@ PtrList<volScalarField> QdotFluid(fluidRegions.size());
 
 List<scalar> initialMassFluid(fluidRegions.size());
 List<bool> frozenFlowFluid(fluidRegions.size(), false);
+List<bool> residualReachedFluid(fluidRegions.size(), true);
+List<bool> residualControlUsedFluid(fluidRegions.size(), false);
+
 
 PtrList<IOMRFZoneList> MRFfluid(fluidRegions.size());
 PtrList<fv::options> fluidFvOptions(fluidRegions.size());

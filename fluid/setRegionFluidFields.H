@@ -51,3 +51,6 @@
 
     const label inertIndex(composition.species()[inertSpecie]);   
 
+    bool& resReachedFluid = residualReachedFluid[i];
+    bool& residualControlUsed = residualControlUsedFluid[i];
+
