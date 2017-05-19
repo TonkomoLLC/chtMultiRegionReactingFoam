@@ -2,7 +2,7 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2011-2016 OpenFOAM Foundation
+    \\  /    A nd           | Copyright (C) 2011-2017 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
@@ -55,9 +55,14 @@ int main(int argc, char *argv[])
     #include "createFields.H"
     #include "initContinuityErrs.H"
 
+    // Residual control
+    bool allRegionsConverged = false;
 
-    while (runTime.loop())
+
+    while (runTime.run())
     {
+        runTime++;
+
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
         forAll(fluidRegions, i)
@@ -66,7 +71,9 @@ int main(int argc, char *argv[])
                 << fluidRegions[i].name() << endl;
             #include "setRegionFluidFields.H"
             #include "readFluidMultiRegionSIMPLEControls.H"
+            #include "readFluidMultiRegionResidualControls.H"
             #include "solveFluid.H"
+            #include "residualControlsFluid.H"
         }
 
         forAll(solidRegions, i)
@@ -75,8 +82,12 @@ int main(int argc, char *argv[])
                 << solidRegions[i].name() << endl;
             #include "setRegionSolidFields.H"
             #include "readSolidMultiRegionSIMPLEControls.H"
+            #include "readSolidMultiRegionResidualControls.H"
             #include "solveSolid.H"
+            #include "residualControlsSolid.H"
         }
+
+        #include "checkResidualControls.H"
 
         runTime.write();
 
