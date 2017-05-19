@@ -1,5 +1,5 @@
     const dictionary& residualControl =
-        mesh.solutionDict().subDict("PIMPLE").subOrEmptyDict("residualControl");
+        mesh.solutionDict().subDict("SIMPLE").subOrEmptyDict("residualControl");
 
     scalar hTol = -1.;
 
@@ -9,7 +9,7 @@
         {
             hTol = readScalar(residualControl.subDict("h").lookup("tolerance"));
 
-            // Used residual control for actual solid region
+            //- Used residual control for actual solid region
             if (hTol != -1)
             {
                 residualControlUsed = true;
