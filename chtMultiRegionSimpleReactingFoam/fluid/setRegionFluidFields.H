@@ -52,3 +52,8 @@
     }
 
     const label inertIndex(composition.species()[inertSpecie]);   
+    
+    const bool momentumPredictor = momentumPredictorFluid[i];
+
+    bool& resReachedFluid = residualReachedFluid[i];
+    bool& residualControlUsed = residualControlUsedFluid[i];

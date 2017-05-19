@@ -13,7 +13,6 @@
      ==
         rho*(U&g)
       + rad.Sh(thermo, he)
-      + Qdot
       + fvOptions(rho, he)
     );
 
@@ -21,7 +20,7 @@
 
     fvOptions.constrain(EEqn);
 
-    EEqn.solve();
+    solvPerfE = EEqn.solve();
 
     fvOptions.correct(he);
 
