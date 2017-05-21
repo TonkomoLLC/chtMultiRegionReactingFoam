@@ -13,6 +13,7 @@
      ==
         rho*(U&g)
       + rad.Sh(thermo, he)
+      + Qdot
       + fvOptions(rho, he)
     );
 
