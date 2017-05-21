@@ -18,8 +18,8 @@
       - fvm::laplacian(turb.alphaEff(), he)
      ==
         rho*(U&g)
-      + rad.Sh(thermo, he)
       + Qdot
+      + rad.Sh(thermo, he)
       + fvOptions(rho, he)
     );
 
