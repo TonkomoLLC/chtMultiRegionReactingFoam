@@ -21,7 +21,14 @@ else
     // --- PISO loop
     for (int corr=0; corr<nCorr; corr++)
     {
-        #include "pEqn.H"
+        if (PEqnOldMethod)
+        {
+            #include "pEqnOldMethod.H"
+        }
+        else
+        {            
+            #include "pEqn.H"
+        }
     }
 
     turb.correct();
