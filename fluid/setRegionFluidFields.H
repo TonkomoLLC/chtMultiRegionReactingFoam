@@ -53,4 +53,4 @@
 
     bool& resReachedFluid = residualReachedFluid[i];
     bool& residualControlUsed = residualControlUsedFluid[i];
-
+    bool& firstIteration = firstIterationFluid[i];
