@@ -1,8 +1,8 @@
 
 EXE_INC = \
     -I. \
-    -I./fluid \
-    -I./solid \
+    -Ifluid \
+    -Isolid \
     -I./porousFluid \
     -I./porousSolid \
     -I./include \
