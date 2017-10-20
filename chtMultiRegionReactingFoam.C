@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
         {
 //            bool finalIter = oCorr == nOuterCorr-1;
 
-            Info<< "Pimple iteration " << oCorr << "\n";
+            Info<< nl << "Pimple iteration " << oCorr;
 
             if (oCorr == nOuterCorr-1 || allRegionsConverged)
             {
