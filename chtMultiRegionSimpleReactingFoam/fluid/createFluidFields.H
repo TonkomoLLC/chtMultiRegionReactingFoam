@@ -1,4 +1,5 @@
 // Initialise fluid field pointer lists
+PtrList<rhoReactionThermo> pThermoFluid(fluidRegions.size());
 PtrList<combustionModels::rhoCombustionModel> reactionFluid(fluidRegions.size());
 PtrList<volScalarField> rhoFluid(fluidRegions.size());
 PtrList<volVectorField> UFluid(fluidRegions.size());
@@ -10,34 +11,33 @@ PtrList<surfaceScalarField> ghfFluid(fluidRegions.size());
 PtrList<compressible::turbulenceModel> turbulence(fluidRegions.size());
 PtrList<volScalarField> p_rghFluid(fluidRegions.size());
 PtrList<radiation::radiationModel> radiation(fluidRegions.size());
+PtrList<volScalarField> KFluid(fluidRegions.size());
+PtrList<volScalarField> dpdtFluid(fluidRegions.size());
 PtrList<volScalarField> QdotFluid(fluidRegions.size());
 
 List<scalar> initialMassFluid(fluidRegions.size());
-List<label> pRefCellFluid(fluidRegions.size(), 0);
-List<scalar> pRefValueFluid(fluidRegions.size(), 0.0);
 List<bool> frozenFlowFluid(fluidRegions.size(), false);
 List<bool> residualReachedFluid(fluidRegions.size(), true);
 List<bool> residualControlUsedFluid(fluidRegions.size(), false);
 List<bool> firstIterationFluid(fluidRegions.size(), true);
 
-PtrList<dimensionedScalar> rhoMax(fluidRegions.size());
-PtrList<dimensionedScalar> rhoMin(fluidRegions.size());
-
 PtrList<IOMRFZoneList> MRFfluid(fluidRegions.size());
 PtrList<fv::options> fluidFvOptions(fluidRegions.size());
 PtrList<multivariateSurfaceInterpolationScheme<scalar>::fieldTable> fieldsFluid(fluidRegions.size());
+
+
 // Populate fluid field pointer lists
 forAll(fluidRegions, i)
 {
     Info<< "*** Reading fluid mesh thermophysical properties for region "
         << fluidRegions[i].name() << nl << endl;
 
-    Info<< "    Creating combustion model\n" << endl;
+    Info<< "Reading thermophysical properties\n" << endl;
 
-    reactionFluid.set
+    pThermoFluid.set
     (
         i,
-        combustionModels::rhoCombustionModel::New(fluidRegions[i]).ptr()
+          autoPtr<rhoReactionThermo>(rhoReactionThermo::New(fluidRegions[i])).ptr()
     );
 
     Info<< "    Adding to rhoFluid\n" << endl;
@@ -54,7 +54,7 @@ forAll(fluidRegions, i)
                 IOobject::NO_READ,
                 IOobject::AUTO_WRITE
             ),
-            reactionFluid[i].thermo().rho()
+            pThermoFluid[i].rho()
         )
     );
 
@@ -169,12 +169,10 @@ forAll(fluidRegions, i)
             rhoFluid[i],
             UFluid[i],
             phiFluid[i],
-            reactionFluid[i].thermo()
+            pThermoFluid[i]
         ).ptr()
     );
 
-// Set the turbulence into the reaction model
-    reactionFluid[i].setTurbulence(turbulence[i]);
 
     p_rghFluid.set
     (
@@ -194,14 +192,64 @@ forAll(fluidRegions, i)
     );
 
     // Force p_rgh to be consistent with p
-    p_rghFluid[i] = reactionFluid[i].thermo().p() - rhoFluid[i]*ghFluid[i];
+    p_rghFluid[i] = pThermoFluid[i].p() - rhoFluid[i]*ghFluid[i];
 
     fluidRegions[i].setFluxRequired(p_rghFluid[i].name());
+
+    Info<< "Creating reaction model\n" << endl;
+ 
+    reactionFluid.set
+    (
+        i,
+          autoPtr<combustionModels::rhoCombustionModel>
+          (
+          combustionModels::rhoCombustionModel::New
+           (
+            pThermoFluid[i],
+            turbulence[i]          
+           )
+          )
+    );
 
     radiation.set
     (
         i,
         radiation::radiationModel::New(reactionFluid[i].thermo().T())
+    );
+
+    initialMassFluid[i] = fvc::domainIntegrate(rhoFluid[i]).value();
+
+    Info<< "    Adding to KFluid\n" << endl;
+    KFluid.set
+    (
+        i,
+        new volScalarField
+        (
+            "K",
+            0.5*magSqr(UFluid[i])
+        )
+    );
+
+    Info<< "    Adding to dpdtFluid\n" << endl;
+    dpdtFluid.set
+    (
+        i,
+        new volScalarField
+        (
+            IOobject
+            (
+                "dpdt",
+                runTime.timeName(),
+                fluidRegions[i]
+            ),
+            fluidRegions[i],
+            dimensionedScalar
+            (
+                "dpdt",
+                reactionFluid[i].thermo().p().dimensions()/dimTime,
+                0
+            )
+        )
     );
 
    Info<< "    Adding to Qdot\n" << endl;
@@ -228,51 +276,9 @@ forAll(fluidRegions, i)
         )
     );
 
-    initialMassFluid[i] = fvc::domainIntegrate(rhoFluid[i]).value();
-
-    const dictionary& simpleDict =
-        fluidRegions[i].solutionDict().subDict("SIMPLE");
-
-    setRefCell
-    (
-        reactionFluid[i].thermo().p(),
-        p_rghFluid[i],
-        simpleDict,
-        pRefCellFluid[i],
-        pRefValueFluid[i]
-    );
-
-    simpleDict.readIfPresent("frozenFlow", frozenFlowFluid[i]);
-
-    rhoMax.set
-    (
-        i,
-        new dimensionedScalar
-        (
-            dimensionedScalar::lookupOrDefault
-            (
-                "rhoMax",
-                simpleDict,
-                dimDensity,
-                GREAT
-            )
-        )
-    );
-
-    rhoMin.set
-    (
-        i,
-        new dimensionedScalar
-        (
-            dimensionedScalar::lookupOrDefault
-            (
-                "rhoMin",
-                simpleDict,
-                dimDensity,
-                0
-            )
-        )
-    );
+    const dictionary& pimpleDict =
+        fluidRegions[i].solutionDict().subDict("PIMPLE");
+    pimpleDict.readIfPresent("frozenFlow", frozenFlowFluid[i]);
 
     Info<< "    Adding MRF\n" << endl;
     MRFfluid.set
@@ -290,9 +296,8 @@ forAll(fluidRegions, i)
 
     turbulence[i].validate();
 
-    if (simpleDict.isDict("residualControl"))
+    if (pimpleDict.isDict("residualControl"))
     {
-
         Info<< "    Reading residual controls\n" << endl;
 
         bool& residualControlUsed = residualControlUsedFluid[i];
@@ -302,13 +307,13 @@ forAll(fluidRegions, i)
 
         #include "readFluidMultiRegionResidualControls.H"
     }
-    
-        fieldsFluid.set
+
+    fieldsFluid.set
     	(
     	    i,
 			new multivariateSurfaceInterpolationScheme<scalar>::fieldTable 
 		);
-
+		
     basicMultiComponentMixture& composition = reactionFluid[i].thermo().composition();	
 	
 	forAll(composition.Y(), j)
@@ -317,7 +322,4 @@ forAll(fluidRegions, i)
 	}
 		
     fieldsFluid[i].add(reactionFluid[i].thermo().he());
-
-
-
 }
