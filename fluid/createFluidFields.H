@@ -1,4 +1,5 @@
 // Initialise fluid field pointer lists
+PtrList<rhoReactionThermo> pThermoFluid(fluidRegions.size());
 PtrList<combustionModels::rhoCombustionModel> reactionFluid(fluidRegions.size());
 PtrList<volScalarField> rhoFluid(fluidRegions.size());
 PtrList<volVectorField> UFluid(fluidRegions.size());
@@ -31,12 +32,12 @@ forAll(fluidRegions, i)
     Info<< "*** Reading fluid mesh thermophysical properties for region "
         << fluidRegions[i].name() << nl << endl;
 
-    Info<< "    Creating combustion model\n" << endl;
+    Info<< "Reading thermophysical properties\n" << endl;
 
-    reactionFluid.set
+    pThermoFluid.set
     (
         i,
-        combustionModels::rhoCombustionModel::New(fluidRegions[i]).ptr()
+          autoPtr<rhoReactionThermo>(rhoReactionThermo::New(fluidRegions[i])).ptr()
     );
 
     Info<< "    Adding to rhoFluid\n" << endl;
@@ -53,7 +54,7 @@ forAll(fluidRegions, i)
                 IOobject::NO_READ,
                 IOobject::AUTO_WRITE
             ),
-            reactionFluid[i].thermo().rho()
+            pThermoFluid[i].rho()
         )
     );
 
@@ -168,12 +169,10 @@ forAll(fluidRegions, i)
             rhoFluid[i],
             UFluid[i],
             phiFluid[i],
-            reactionFluid[i].thermo()
+            pThermoFluid[i]
         ).ptr()
     );
-    
-// Set the turbulence into the reaction model
-    reactionFluid[i].setTurbulence(turbulence[i]);
+
 
     p_rghFluid.set
     (
@@ -193,9 +192,24 @@ forAll(fluidRegions, i)
     );
 
     // Force p_rgh to be consistent with p
-    p_rghFluid[i] = reactionFluid[i].thermo().p() - rhoFluid[i]*ghFluid[i];
+    p_rghFluid[i] = pThermoFluid[i].p() - rhoFluid[i]*ghFluid[i];
 
     fluidRegions[i].setFluxRequired(p_rghFluid[i].name());
+
+    Info<< "Creating reaction model\n" << endl;
+ 
+    reactionFluid.set
+    (
+        i,
+          autoPtr<combustionModels::rhoCombustionModel>
+          (
+          combustionModels::rhoCombustionModel::New
+           (
+            pThermoFluid[i],
+            turbulence[i]          
+           )
+          )
+    );
 
     radiation.set
     (
