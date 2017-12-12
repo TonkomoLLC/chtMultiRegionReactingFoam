@@ -1,6 +1,6 @@
     fvMesh& mesh = fluidRegions[i];
 
-    combustionModels::rhoCombustionModel& reaction = reactionFluid[i];
+    CombustionModel<rhoReactionThermo>& reaction = reactionFluid[i];
     rhoReactionThermo& thermo = pThermoFluid[i]; 
     PtrList<volScalarField>& Y = reactionFluid[i].thermo().composition().Y(); 
     thermo.validate(args.executable(), "h", "e");

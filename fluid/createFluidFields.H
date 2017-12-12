@@ -1,6 +1,6 @@
 // Initialise fluid field pointer lists
 PtrList<rhoReactionThermo> pThermoFluid(fluidRegions.size());
-PtrList<combustionModels::rhoCombustionModel> reactionFluid(fluidRegions.size());
+PtrList<CombustionModel<rhoReactionThermo>> reactionFluid(fluidRegions.size());
 PtrList<volScalarField> rhoFluid(fluidRegions.size());
 PtrList<volVectorField> UFluid(fluidRegions.size());
 PtrList<surfaceScalarField> phiFluid(fluidRegions.size());
@@ -201,9 +201,9 @@ forAll(fluidRegions, i)
     reactionFluid.set
     (
         i,
-          autoPtr<combustionModels::rhoCombustionModel>
+          autoPtr<CombustionModel<rhoReactionThermo>>
           (
-          combustionModels::rhoCombustionModel::New
+          CombustionModel<rhoReactionThermo>::New
            (
             pThermoFluid[i],
             turbulence[i]          
