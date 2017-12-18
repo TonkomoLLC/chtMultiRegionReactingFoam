@@ -1,3 +1,5 @@
+# 18-Dec-17: chtMultiRegionFoam in the OpenFOAM-dev branch now includes chemical reactions!
+
 # chtMultiRegionReactingFoam
 OpenFOAM transient solver for buoyant, turbulent fluid flow and solid heat conduction with conjugate heat transfer between solid and fluid regions, plus combustion with chemical reactions.
 
